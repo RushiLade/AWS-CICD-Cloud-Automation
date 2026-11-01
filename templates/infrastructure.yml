@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Production Infrastructure Setup: S3 Asset Storage and RDS Database'
+
+Resources:
+  # 1. Create a secure cloud storage folder for application assets
+  ApplicationStorageBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub 'app-assets-${AWS::AccountId}-${AWS::Region}'
+      VersioningConfiguration:
+        Status: Enabled
+
+  # 2. Create a managed relational database instance (MySQL)
+  ApplicationDatabase:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      AllocatedStorage: '20'
+      DBInstanceClass: 'db.t3.micro' # Free-tier eligible server type
+      Engine: 'mysql'
+      EngineVersion: '8.0'
+      MasterUsername: 'db_admin'
+      MasterUserPassword: 'SecureCloudPassword2026!' # In a real environment, we pull this securely from AWS Secrets Manager
+      DBName: 'app_production_db'
+      PubliclyAccessible: false
+      DeleteAutomatedBackups: true
+
+Outputs:
+  StorageBucketName:
+    Description: 'Name of the created S3 storage bucket'
+    Value: !Ref ApplicationStorageBucket
+
+  DatabaseEndpoint:
+    Description: 'Connection endpoint for the relational database'
+    Value: !GetAtt ApplicationDatabase.Endpoint.Address

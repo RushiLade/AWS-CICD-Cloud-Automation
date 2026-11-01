@@ -1,0 +1,38 @@
+name: AWS Infrastructure Deployment (CI/CD)
+
+# 1. Trigger this workflow automatically every time code is pushed to the main branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-infrastructure:
+    name: Validate and Deploy Cloud Templates
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step A: Pull down a fresh copy of your code repository onto the runner machine
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      # Step B: Securely log into AWS using your account environment keys
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1 # Deploys directly to the Mumbai Cloud Data Center
+
+      # Step C: Use the AWS CLI to verify that your template has zero syntax errors
+      - name: Validate CloudFormation Template
+        run: |
+          aws cloudformation validate-template --template-body file://templates/infrastructure.yml
+
+      # Step D: Execute the blueprint to build or update your live AWS architecture
+      - name: Deploy Core Infrastructure Stack
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: production-core-infrastructure-stack
+          template: templates/infrastructure.yml
+          no-fail-on-empty-changeset: "true"
